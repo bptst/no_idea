@@ -19,6 +19,7 @@ class Board {
     this.is_draging=false
     this.position_row=Math.round(ROWS/2)-COLS_VIEW/2
     this.position_col=COLS/2-COLS_VIEW/2
+    this.turn=0
   }
 
   get_new_grid() {
@@ -31,12 +32,12 @@ class Board {
     new_tab[pose_human]=new Piece(pose_human,'human',this)
     new_tab[pose_human+1]=new Piece(pose_human+1,'human',this)
 
-    new_tab[pose_human-4*COLS]=new Piece(pose_human-4*COLS,'spider',this)
-    new_tab[pose_human-4*COLS+1]=new Piece(pose_human-4*COLS+1,'gobelin',this)
-    new_tab[pose_human-4*COLS+2]=new Piece(pose_human-4*COLS+2,'gobelin',this)
+//    new_tab[pose_human-4*COLS]=new Piece(pose_human-4*COLS,'spider',this)
+//    new_tab[pose_human-4*COLS+1]=new Piece(pose_human-4*COLS+1,'gobelin',this)
+  //  new_tab[pose_human-4*COLS+2]=new Piece(pose_human-4*COLS+2,'gobelin',this)
 
 
-    new_tab[pose_human-2*COLS]=new Piece(pose_human-2*COLS,'fire',this)
+  //  new_tab[pose_human-2*COLS]=new Piece(pose_human-2*COLS,'fire',this)
 
 
     return new_tab
@@ -136,7 +137,6 @@ class Board {
 
           movingsecond=ROWS*(colonne+1)+ligne
 
-         // this.ctx.drawImage(this.get_image(-1), ligne, colonne+1, 1, 1);
          if (this.is_visible(movingsecond)){
            info_tomove_second[0]=this.grid[i+ROWS].type
            info_tomove_second[1]=ligne-this.position_row
@@ -161,7 +161,6 @@ class Board {
 
           movingsecond=COLS*(colonne-1)+ligne
 
-         // this.ctx.drawImage(this.get_image(-1), ligne, colonne-1, 1, 1);
          if (this.is_visible(movingsecond)){
            info_tomove_second[0]=this.grid[i-ROWS].type
            info_tomove_second[1]=ligne-this.position_row
@@ -252,14 +251,20 @@ class Board {
   move_piece(first,second){
 
       this.grid[second].type=this.grid[first].type
+
+
       this.grid[second].fall=this.grid[first].fall
       this.grid[second].height=this.grid[first].height
-      this.grid[second].counter=this.grid[first].counter
-      this.grid[second].max_counter=this.grid[first].max_counter
-      this.grid[second].max_hp=this.grid[first].max_hp
-      this.grid[second].hp=this.grid[first].hp
+      this.grid[second].stats=this.grid[first].stats
       this.grid[second].damage=this.grid[first].damage
       this.grid[second].animation=this.grid[first].animation
+
+      if (DATA_PIECE[this.grid[second].type].category.includes('alive')){
+    //    this.grid[second].impact_hp(this.grid[second].height)
+
+      }
+
+
 
 
 
@@ -271,7 +276,8 @@ move_all_piece(col,max_counter){
   for (let i = 1; i < COLS+1; i++) {
     let a= COLS*(COLS-i)+col
     if (a+this.grid[a].height*COLS<COLS*ROWS){
-    this.move_piece(a, a+this.grid[a].height*COLS)
+      if (a!=a+this.grid[a].height*COLS)
+      this.move_piece(a, a+this.grid[a].height*COLS)
     }
 
   }
@@ -391,6 +397,7 @@ re_move(){
    this.do_ia_movement()
 
 
+
  }
 
 
@@ -399,7 +406,6 @@ re_move(){
     let colonne
     let ligne
 
-      let tab_lighted = this.check_light()
       for (let i = 0; i < ROWS_VIEW; i++) {
         for (let p = 0; p < COLS_VIEW; p++) {
 
@@ -413,6 +419,22 @@ re_move(){
       }
     }
 
+      draw_effects(){
+        let colonne
+        let ligne
+
+          for (let i = 0; i < ROWS_VIEW; i++) {
+            for (let p = 0; p < COLS_VIEW; p++) {
+
+              let index= (p+this.position_row) + (i+this.position_col)*(COLS-COLS_VIEW)+COLS_VIEW*(i+this.position_col)
+
+
+                this.grid[index].draw_effects(this.ctx)
+
+            }
+
+          }
+        }
 
 
   animated(){
@@ -432,6 +454,8 @@ re_move(){
         this.grid[index].update(this.ctx)
       }
     }
+    this.draw_effects()
+
     this.draw_grid()
 
     this.draw_stats()
@@ -664,13 +688,19 @@ re_move(){
 
 
 
-            this.grid[i].impact_hp(DATA_PIECE[this.grid[single_from].type].damage)
+            this.grid[i].impact_hp(this.grid[single_from].damage)
 
 
 
         }
-        if (this.grid[i].hp<=0 ){
+        if (this.grid[i].stats.hp.amount<=0 ){
           this.grid[i].delay_death_loot=attack.to
+          for (let single_from of attack.from) {
+            if (this.grid[single_from].type=='human'){
+              this.grid[single_from].gain_xp(DATA_PIECE[this.grid[i].type].xp/attack.from.length)
+            }
+
+          }
         }
 
 
@@ -866,6 +896,12 @@ re_move(){
     return true
   }
   made_amove(first){
+
+
+    this.turn+=1
+
+
+
     this.swap_piece(first,second_target)
 
   }
@@ -914,7 +950,7 @@ re_move(){
     let vision=this.get_neighbors(index, range_vision, 'circle')
     for (const position of vision) {
 
-      if (this.grid[index].hp/this.grid[index].max_hp<0.5){
+      if (this.grid[index].stats.hp.amount/this.grid[index].stats.hp.max<0.5){
         if (DATA_PIECE[this.grid[index].type].movement.like_when_low.includes(this.grid[position].type)){
           return(this.next_path_for(index, position))
         }
@@ -927,6 +963,7 @@ re_move(){
     }
 
   }
+  return index
 }
   do_ia_movement(){
   let colonne

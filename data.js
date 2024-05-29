@@ -1,5 +1,5 @@
-const COLS=50
-const ROWS=50
+const COLS=40
+const ROWS=40
 
 let ROWS_VIEW=12
 let BLOCK_SIZE=window.innerHeight/ROWS_VIEW
@@ -15,8 +15,12 @@ const rock=['rock','rock','rock','rock_break']
 const fire=['rock_break','wood','rock_break','fire']
 const wall=['wood','wood','wood','woodwall']
 const fertilizer=['dirt','coal','dirt','fertilizer']
+const brick=['dirt','dirt','dirt','brick']
+const tree=['bush','bush','bush',"tree"]
+const coocked_kebab=['coocked_ham','coocked_ham','coocked_ham',"coocked_kebab"]
+const kebab=['ham','ham','ham',"kebab"]
 
-const craftlist=[planche,rock,fire,wall,fertilizer]
+const craftlist=[planche,rock,fire,wall,fertilizer,brick,tree,kebab,coocked_kebab]
 
 
 DATA_EFFETS={
@@ -34,6 +38,9 @@ DATA_EFFETS={
         attack:[]
 
   },
+
+
+
   blow:{
     img: 'blow.png',
 
@@ -58,6 +65,8 @@ DATA_EFFETS={
     recepies:[
       {from: 'wood', to: 'coal', turn: 1},
       {from: 'ham',to: 'coocked_ham',turn: 1},
+      {from: 'kebab',to: 'coocked_kebab',turn: 1},
+
       {from: 'barrel',to: 'explosive_barrel',turn: 1}
 
     ],
@@ -177,6 +186,29 @@ hungry:{
 
 
 DATA_PIECE={
+
+  coocked_kebab:{
+    id: 'coocked_kebab',
+    img: 'coocked_kebab.png',
+    effect: 'none',
+    category: [],
+    amount_food: 30,
+    amount_heal: 10,
+    range_light: 0,
+    consume: false
+
+  },
+
+  kebab:{
+    id: 'kebab',
+    img: 'kebab.png',
+    effect: 'none',
+    category: [],
+    amount_food: 0,
+    range_light: 0,
+    consume: false
+
+  },
   coocked_ham:{
     id: 'coocked_ham',
     img: 'coocked_ham.png',
@@ -231,6 +263,18 @@ DATA_PIECE={
     range_light: 0,
     consume: false
   },
+
+
+  brick: {
+    id: 'brick',
+    img: 'brick.png',
+    effect: 'none',
+    category: [],
+
+
+    range_light: 0,
+    consume: false
+  },
   rock: {
     id: 'rock',
     img: 'Rock.png',
@@ -266,7 +310,7 @@ DATA_PIECE={
     id: 'fire',
     img: 'fire.png',
     effect: ['burning'],
-    category: ['grow'],
+    category: [],
 
 
     animation:{
@@ -312,8 +356,8 @@ DATA_PIECE={
     range_light: 0,
     consume: false
   },
-  mushrooms:{
-    id: 'mushrooms',
+  bush:{
+    id: 'bush',
     img: 'Mushrooms.png',
     category: [],
 
@@ -337,9 +381,10 @@ DATA_PIECE={
     img: 'human.png',
     effect: ['attacked','hungry'],
     category: ['alive','grow','unmovable'],
-    range_light: 4,
+    range_light: 3,
     damage:5,
-    max_hp:100,
+    max_hp:30,
+    max_xp:10,
     consume: true,
     animation:{
       img:'Warrior_Purple.png',
@@ -371,10 +416,11 @@ DATA_PIECE={
     img: 'gobelin.png',
     effect: ['gobelin_attacked'],
     category: ['alive','moving','unmovable'],
-    damage:10,
-    max_hp:50,
+    damage:3,
+    max_hp:20,
     range_light: 0,
     consume: false,
+    xp:3,
 
     movement:{
       like:['human'],
@@ -404,10 +450,11 @@ DATA_PIECE={
     img: 'spider.png',
     effect: ['spider_attacked'],
     category: ['alive','moving','unmovable'],
-    damage:5,
-    max_hp:25,
+    damage:2,
+    max_hp:15,
     range_light: 0,
     consume: false,
+    xp:4,
 
     movement:{
       like:['human'],
@@ -436,8 +483,8 @@ DATA_PIECE={
     img: 'pig.png',
     effect: 'none',
     category: ['alive'],
-    damage: 10,
     max_hp:15,
+    xp:1,
 
     range_light: 0,
     consume: false,
@@ -566,7 +613,7 @@ explosive_barrel:{
 
 }
 DATA_STYLE={
-        counter:{ position_bar:0.8,
+        counter:{ position_bar:0.7,
            color_bg:'#FD8008',
            color:'#FFB53E'
               },
@@ -577,8 +624,13 @@ DATA_STYLE={
         },
         heal:{
           position_bar:0.1,
-          color_bg:'green',
-          color:'green'
+          color_bg:'#55B809',
+          color:'#63D50C'
+        },
+        xp:{
+          position_bar:0.8,
+          color_bg:'#76D6FF',
+          color:'#93D6FF'
         }
 }
 

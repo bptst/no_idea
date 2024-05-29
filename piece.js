@@ -22,10 +22,7 @@ class Piece {
 
       this.type = this.create_type(type)
 
-      if (DATA_PIECE[this.type].category.includes('alive')){
-        this.hp=DATA_PIECE[this.type].max_hp
-        this.max_hp=DATA_PIECE[this.type].max_hp
-      }
+
       this.move_target='none'
       this.can_move=true
       this.dead=false
@@ -44,16 +41,34 @@ class Piece {
       this.shade=false
       this.effect=[]
       this.height=0
-      this.counter=0
-      this.max_counter=0
       this.delay_death_loot='none'
       this.last_value={
         counter:0,
-        hp:0
+        hp:0,
+        xp:0
       }
       this.finish_move=true
       this.offset_y=0
       this.offset_x=0
+
+      this.damage=DATA_PIECE[this.type].damage
+
+      this.stats={
+        xp:{
+          max:DATA_PIECE[this.type].max_xp,
+          amount:0
+        },
+        hp:{
+          max:DATA_PIECE[this.type].max_hp,
+          amount:DATA_PIECE[this.type].max_hp
+        },
+        counter:{
+          max:0,
+          amount:0
+
+        }
+
+      }
 
 
 
@@ -68,13 +83,21 @@ class Piece {
 
 
     }
+    gain_xp(amount){
+        this.stats.xp.amount+=amount
+        this.last_value.xp+=amount
+        this.number_to_draw.push({value:amount, tick:0, type:'xp', offset_x:getRandomInt(10)/20+0.25, offset_y:getRandomInt(10)/20+0.25})
+
+
+
+    }
 
     impact_hp(number){
-      this.hp-=number
-      if (this.hp>this.max_hp){
-        this.hp=this.max_hp
+      this.stats.hp.amount-=number
+      if (this.stats.hp.amount>this.stats.hp.max){
+        this.stats.hp.amount=this.stats.hp.max
       }
-      this.last_value.damage+=number
+      this.last_value.hp+=number
 
       if (number<0){
         this.number_to_draw.push({value:-number, tick:0, type:'heal', offset_x:getRandomInt(10)/20+0.25, offset_y:getRandomInt(10)/20+0.25})
@@ -86,13 +109,19 @@ class Piece {
     }
 
     impact_counter(number){
+      if (number>this.stats.counter.amount){
+        this.last_value.counter+=this.stats.counter.amount
 
-      this.counter-=number
-      this.last_value.counter+=number
+      }
+      else{
+        this.last_value.counter+=number
+
+      }
+      this.stats.counter.amount-=number
 
       this.number_to_draw.push({value:number, tick:0, type:'counter', offset_x:getRandomInt(10)/20+0.25, offset_y:getRandomInt(10)/20+0.25})
-      if (this.counter<0){
-        this.counter=0
+      if (this.stats.counter.amount<0){
+          this.stats.counter.amount=0
       }
 
     }
@@ -125,9 +154,12 @@ class Piece {
         else{
 
         this.type= this.delay_death_loot
+        this.damage=DATA_PIECE[this.type].damage
+
         this.delay_death_loot='none'
-        this.counter=0
+        this.stats.counter.amount=0
         this.animation=[]
+
         if (!this.play_animation('spawn')){
           this.play_animation('idle')
         }
@@ -163,10 +195,10 @@ class Piece {
       for (const effect of this.effect) {
         for (const recepie of DATA_EFFETS[effect.effect].recepies) {
           if (this.type == recepie.from){
-            this.counter+=1
-            this.max_counter=recepie.turn
+              this.stats.counter.amount+=1
+            this.stats.counter.max=recepie.turn
 
-            if (this.counter == recepie.turn){
+            if ( this.stats.counter.amount == recepie.turn){
 
               this.delay_death_loot=recepie.to
 
@@ -188,19 +220,13 @@ class Piece {
           let color_bg=DATA_STYLE[type].color_bg
           let color=DATA_STYLE[type].color
 
-          let value=this.counter
-          let max_value=this.max_counter
+          let value=this.stats[type].amount
+          let max_value=this.stats[type].max
           let last_value=this.last_value[type]
 
-          if (this.counter<this.last_value.counter){
-            last_value=this.counter
 
-          }
 
-          if (type=='hp'){
-            value=this.hp
-            max_value=this.max_hp
-          }
+
 
           const pixel=0.01
           ctx.beginPath();
@@ -255,8 +281,9 @@ class Piece {
                 ctx.fillStyle = color;
 
                 ctx.fillText(number.value,this.offset_x+ this.ligne-this.board.position_row+number.offset_x,this.offset_y+ number.offset_y+this.colonne-this.board.position_col-1*number.tick/BLOCK_SIZE);
-                number.tick+=0.5
+                number.tick+=0.4
             }
+
 
         }
       }
@@ -296,6 +323,7 @@ class Piece {
         if (this.moving){
           ctx.drawImage(DATA_PIECE['void'].img, this.ligne-this.board.position_row, this.colonne-this.board.position_col, 1, 1);
         }
+
         if (this.fall){
           if (DATA_PIECE[this.type]['animation']){
 
@@ -375,9 +403,18 @@ class Piece {
 
     create_type(type){
         if (type==undefined){
-          let can_spawn=['tree','rock','pig','dirt','cabbage','barrel']
+
+          if (getRandomInt(100)==2){
+            return 'gobelin'
+          }
+          if (getRandomInt(100)==2){
+            return 'spider'
+          }
+          let can_spawn=['rock','tree','rock','bush','rock','tree','rock','pig','dirt','cabbage','barrel','bush']
             return can_spawn[getRandomInt(can_spawn.length)]
         }
+
+
 
         else return type
 
@@ -387,18 +424,17 @@ class Piece {
       if (this.is_inline(this.move_target)){
 
         let distance=this.ligne-this.move_target%ROWS
-        this.offset_x=-2.5*distance*this.counter_animation*(DATA_PIECE[this.type]['animation'].frames/BLOCK_SIZE)
-
+        this.offset_x=-1*distance*(this.counter_animation/DATA_PIECE[this.type]['animation'].frames)
       }else{
         let distance=this.colonne-Math.floor(this.move_target/COLS)
         distance=this.board.get_sign(distance)
-        this.offset_y=-2.5*distance*this.counter_animation*(DATA_PIECE[this.type]['animation'].frames/BLOCK_SIZE)
-
+        this.offset_y=-1*distance*(this.counter_animation/DATA_PIECE[this.type]['animation'].frames)
       }
 
     }
 
     draw_effects(ctx){
+      if (this.fall==false && this.visible){
       const colonne=this.colonne-this.board.position_col
       const ligne=this.ligne-this.board.position_row
 
@@ -407,6 +443,8 @@ class Piece {
         ctx.drawImage(image_effect, ligne, colonne, 1, 1);
       }
     }
+  }
+
     is_effected_by(effect_name){
       for (const effect of this.effect) {
         if (effect.effect==effect_name){
@@ -422,20 +460,27 @@ class Piece {
 
     draw_stats(ctx){
       if (this.visible){
-        if (true){
-      if (DATA_PIECE[this.type].category.includes('alive') && this.moving==false && this.visible && this.hp<this.max_hp){
+
+      if (DATA_PIECE[this.type].category.includes('grow') && this.moving==false && this.visible && (this.stats.counter.amount>0 || this.type=='human')){
+        this.draw_bar(ctx, 'counter')
+      }
+
+      if (DATA_PIECE[this.type].category.includes('alive') && this.moving==false && this.visible && this.stats.hp.amount>0 && this.stats.hp.amount<this.stats.hp.max){
        this.draw_bar(ctx, 'hp')
 
 
       }
 
-      if (DATA_PIECE[this.type].category.includes('grow') && this.moving==false && this.visible && this.counter>0){
-        this.draw_bar(ctx, 'counter')
+      if (this.type=='human' && this.moving==false){
+        this.draw_bar(ctx, 'xp')
       }
-}
+
+
+
       this.draw_number(ctx)
     }
     }
+
 
     draw(ctx){
       const colonne=this.colonne-this.board.position_col
@@ -445,7 +490,6 @@ class Piece {
       if (this.fall==false){
         if (this.visible){
 
-        this.draw_effects(ctx)
 }
         if (!this.moving){
           let offset_y=0
@@ -462,8 +506,6 @@ class Piece {
             if (this.stagger==5){
               this.counter_animation+=1
 
-
-
               if (this.counter_animation>DATA_PIECE[this.type]['animation'].frames){
 
                 this.animation.shift()
@@ -471,10 +513,10 @@ class Piece {
 
                   if (this.move_target!= 'none'){
                     just_finished_move=true
-                    this.board.swap_piece(this.get_index(),this.move_target)
+                    this.board.swap_piece(this.get_index(), this.move_target)
+                    this.board.apply_effects()
+
                     this.move_target='none'
-
-
 
 
                   }

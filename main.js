@@ -66,7 +66,7 @@ window.onload = function() {
           break;
           case "n":
           if (board.finish_move()){
-          board.check_craft()
+            board.check_craft()
         }
           break
 
@@ -98,6 +98,10 @@ window.onload = function() {
 
             info_elem.getElementsByClassName('name')[0].innerText=  board.grid[target].type+'\n counter: '+board.grid[target].counter
             let buffer_string=''
+            buffer_string+=' damage: ' +board.grid[target].damage+'\n'
+            buffer_string+=' max hp: ' +board.grid[target].max_hp+'\n'
+
+
             for (const effect of board.grid[target].effect) {
               buffer_string+='-   '+effect.effect+"\n"
             }
@@ -120,6 +124,7 @@ window.onload = function() {
 
 
         if (board.finish_move() && board.idle &&info_tomove_second[1]!=0){
+
           board.made_amove(target)
 
           board.check_craft()
